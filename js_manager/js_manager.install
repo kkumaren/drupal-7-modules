@@ -1,0 +1,112 @@
+<?php
+
+/**
+ * @file
+ * Install hooks for JavaScript Manager project.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function js_manager_schema() {
+  $schema['js_manager_add_js'] = array(
+    'description' => 'Stores JavaScript items.',
+    'export' => array(
+      'primary key' => 'jsid',
+      'identifier' => 'js_manager_add_js',
+      'default hook' => 'default_js_manager_add_js',
+      'api' => array(
+        'owner' => 'js_manager',
+        'api' => 'default_js_manager_add_js',
+        'minimum_version' => 1,
+        'current_version' => 1,
+      ),
+      'load callback' => 'js_manager_add_js_load',
+    ),
+    'fields' => array(
+      'jsid' => array(
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Primary ID field for the table. Not used for anything except internal look ups.',
+        'no export' => TRUE, // Do not export database-only keys.
+      ),
+      'js_type' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => 'external',
+      ),
+      'name' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'external_js' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'external_js_async' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+        'unsigned' => TRUE,
+      ),
+      'inline_js' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+      ),
+      'exclude_admin' => array(
+        'type' => 'int',
+        'size' => 'tiny',
+        'not null' => TRUE,
+        'default' => 0,
+        'unsigned' => TRUE,
+      ),
+      'scope' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => 'header',
+      ),
+      'weight' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'visibility' => array(
+        'description' => 'Script visibility setting.',
+        'type' => 'blob',
+        'not null' => FALSE,
+        'size' => 'big',
+      ),
+    ),
+    'primary key' => array('jsid'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function js_manager_uninstall() {
+  drupal_uninstall_schema('js_manager_add_js');
+}
+
+/**
+ * Add visibility field to js_manager_add_js table.
+ */
+function js_manager_update_7100() {
+  $spec = array(
+    'description' => 'Script visibility setting.',
+    'type' => 'blob',
+    'not null' => FALSE,
+    'size' => 'big',
+  );
+  db_add_field('js_manager_add_js', 'visibility', $spec);
+}

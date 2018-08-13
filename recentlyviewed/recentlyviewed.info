@@ -1,0 +1,6 @@
+name = Recently Viewed
+description = Create a block for the recently viewed frames using the FredCarousel jQuery plugin.
+package = User interface
+core = 7.x
+version = 7.x-1.1
+project = recentlyviewed

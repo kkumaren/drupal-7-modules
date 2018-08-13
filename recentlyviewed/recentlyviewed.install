@@ -1,0 +1,13 @@
+<?php
+
+/**
+ * @file
+ * Recently Viewed install file
+ */
+
+/**
+ * Implemets hook_uninstall().
+ */
+function recentlyviewed_uninstall() {
+  variable_del('recently_viewed_widget_block_display_nodetypes');
+}

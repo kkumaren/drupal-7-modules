@@ -1,0 +1,143 @@
+<?php
+/**
+ * @file
+ * Recently viewed widget module.
+ */
+
+define('RECENTLYVIEWED_WIDGET_TITLE', 'recently_viewed_widget_title');
+define('RECENTLYVIEWED_WIDGET_TITLE_DEFAULT', 'Recently viewed');
+
+define('RECENTLYVIEWED_WIDGET_TEXT_CLEAR_LIST', 'recently_viewed_widget_text_clear_list');
+define('RECENTLYVIEWED_WIDGET_TEXT_CLEAR_LIST_DEFAULT', 'Clear this list');
+
+define('RECENTLYVIEWED_WIDGET_AJAX_CALLBACK', 'ajax/recentlyviewed-callback');
+
+define('RECENTLYVIEWED_WIDGET_MAX', 'recently_viewed_widget_max');
+define('RECENTLYVIEWED_WIDGET_MAX_DEFAULT', '30');
+
+define('RECENTLYVIEWED_WIDGET_BLOCK_REGION', 'recently_viewed_widget_block_region');
+define('RECENTLYVIEWED_WIDGET_BLOCK_REGION_DEFAULT', 'tertiary_content');
+
+/**
+ * Implements hook_block_info().
+ */
+function recentlyviewed_block_info() {
+  $blocks['recently_viewed'] = array(
+    'info' => t('Recently viewed'),
+    'cache' => DRUPAL_NO_CACHE,
+    'visibility' => BLOCK_VISIBILITY_PHP,
+    'pages' => '<?php return _recentlyviewed_block_is_visible(); ?>',
+    'region' => variable_get(RECENTLYVIEWED_WIDGET_BLOCK_REGION, RECENTLYVIEWED_WIDGET_BLOCK_REGION_DEFAULT),
+  );
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function recentlyviewed_block_view($delta = '') {
+  static $recentlyviewed_already_viewed;
+
+  $block = array();
+
+  if ($delta == 'recently_viewed') {
+    $block['subject'] = '';
+
+    $vars = array(
+      'title' => t(variable_get(RECENTLYVIEWED_WIDGET_TITLE, RECENTLYVIEWED_WIDGET_TITLE_DEFAULT)),
+      'text_clear_list' => t(variable_get(RECENTLYVIEWED_WIDGET_TEXT_CLEAR_LIST, RECENTLYVIEWED_WIDGET_TEXT_CLEAR_LIST_DEFAULT)),
+    );
+
+    $path = drupal_get_path('module', 'recentlyviewed');
+    $path_carousel = libraries_get_path('carouFredSel');
+
+    $block['content'] = array(
+      '#markup' => theme('recently_viewed_widget', $vars),
+      '#attached' => array(
+        'css' => array(
+          "{$path}/css/recentlyviewed.css",
+        ),
+        'js' => array(
+          "{$path_carousel}/jquery.carouFredSel-packed.js",
+          "{$path_carousel}/helper-plugins/jquery.touchSwipe.min.js",
+          "{$path}/js/recently_viewed.js",
+        ),
+      ),
+    );
+
+    $block['content'] = drupal_render($block['content']);
+
+    $image_url_template = products_custom_get_image_template((object) array('type' => 'frame_sku'), FALSE);
+
+    $max = variable_get(RECENTLYVIEWED_WIDGET_MAX, RECENTLYVIEWED_WIDGET_MAX_DEFAULT);
+    if (!$recentlyviewed_already_viewed) {
+      // The static variable has been added as there is an odd behaviour with
+      // Drupal and added settings during AJAX calls, ajax will merge all values
+      // together as arrays, so in the case on the search page if a filter is
+      // selected, the AJAX is called and the settings below is merged on itself
+      // causing the 'path' and 'max' to become arrays duplicating itself.
+      // e.g.
+      // Should be: 'path': '\\some-path'
+      // Becomes: 'path': ['\\some-path', '\\some-path'].
+      drupal_add_js(
+        array(
+          'recentlyviewed' => array(
+            'max' => $max,
+            'path' => $image_url_template,
+          ),
+        ),
+        'setting'
+      );
+
+      $recentlyviewed_already_viewed = TRUE;
+    }
+  }
+
+  return $block;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function recentlyviewed_theme() {
+  return array(
+    'recently_viewed_widget' => array(
+      'template' => 'templates/recently-viewed-block',
+      'variables' => array(),
+    ),
+  );
+}
+
+/**
+ * Determine visibility of Recently viewed widget.
+ */
+function _recentlyviewed_block_is_visible() {
+  $arg0 = filter_xss(arg(0), array());
+  $arg1 = filter_xss(arg(1), array());
+
+  if ($arg0 == 'node' && is_numeric($arg1)) {
+    $node = node_load($arg1);
+
+    $node_types = variable_get(
+      'recently_viewed_widget_block_display_nodetypes',
+      array(
+        'frame' => 'frame',
+        'frames_search_page' => 'frames_search_page',
+        'contact_lens' => 'contact_lens',
+      )
+    );
+
+    if (isset($node->nid) && isset($node_types[$node->type])) {
+      return TRUE;
+    }
+  }
+  else {
+    $searchers = facetapi_get_active_searchers();
+    if (!empty($searchers)) {
+      return isset($searchers['search_api@frame_skus']);
+    }
+  }
+
+  return FALSE;
+}

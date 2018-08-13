@@ -1,0 +1,139 @@
+<?php
+
+/**
+ * JavaScript Manager tests.
+ *
+ * @group js_manager
+ */
+class JsManagerTest extends DrupalWebTestCase {
+  protected $profile = 'standard';
+
+  /**
+   * Modules to enable.
+   *
+   * @var array
+   */
+  public $modules = array(
+    'js_manager',
+  );
+
+  /**
+   * @var object
+   */
+  protected $adminUser;
+
+  /**
+   * Assert XPath query returns results.
+   *
+   * @param $xpath
+   */
+  protected function assertXPath($xpath) {
+    $result = $this->xpath($xpath);
+    $this->assertTrue(!empty($result), t('XPath query @xpath returned no results.', array('@xpath' => $xpath)));
+  }
+
+  /**
+   * Info.
+   *
+   * @return array
+   *   The test info
+   */
+  public static function getInfo() {
+    return array(
+      'name' => 'JavaScript Manager',
+      'description' => 'Tests for JavaScript Manager.',
+      'group' => 'JavaScript Manager',
+    );
+  }
+
+  /**
+   * Setup.
+   */
+  public function setUp() {
+    parent::setUp($this->modules);
+
+    // Create admin user.
+    $this->adminUser = $this->drupalCreateUser(array(
+      'manage javascript items',
+      'administer site configuration',
+      'administer modules',
+      'access administration pages',
+    ));
+
+    $this->drupalLogin($this->adminUser);
+  }
+
+  /**
+   * Add JS through the UI.
+   */
+  protected function addJs($data) {
+    $this->drupalGet('admin');
+    $this->clickLink('Structure');
+    $this->clickLink('JavaScript');
+    $this->clickLink('Add');
+    $this->drupalPost(NULL, $data, t('Save'));
+  }
+
+  /**
+   * Test External Header JS.
+   */
+  function testExternalHeaderJs() {
+    $this->addJs(array(
+      'name' => 'external_javascript',
+      'js_type' => 'external',
+      'scope' => 'header',
+      'external_js' => 'http://www.example.com/test.js',
+    ));
+
+    $this->drupalGet('/');
+    $this->assertXPath("//head/script[@src='http://www.example.com/test.js']");
+  }
+
+  /**
+   * Test External Footer JS.
+   */
+  function testExternalFooterJs() {
+    $this->addJs(array(
+      'name' => 'external_footer_javascript',
+      'js_type' => 'external',
+      'scope' => 'footer',
+      'external_js' => 'http://www.example.com/test2.js',
+    ));
+
+    $this->drupalGet('/');
+    $this->assertXPath("//body/script[@src='http://www.example.com/test2.js']");
+  }
+
+  /**
+   * Test Inline Header JS.
+   */
+  function testInlineHeaderJs() {
+    $inline_js = 'var my_variable = 1;';
+    $this->addJs(array(
+      'name' => 'inline_javascript',
+      'js_type' => 'inline',
+      'scope' => 'header',
+      'inline_js' => $inline_js,
+    ));
+
+    $this->drupalGet('/');
+    $this->assertXPath("//head/script[contains(text(),'" . $inline_js . "')]");
+  }
+
+  /**
+   * Test Inline Footer JS.
+   */
+  function testInlineFooterJs() {
+    $inline_js = 'var my_variable = 2;';
+    $this->addJs(array(
+      'name' => 'inline_javascript',
+      'js_type' => 'inline',
+      'scope' => 'footer',
+      'inline_js' => $inline_js,
+    ));
+
+    $this->drupalGet('/');
+    $this->assertXPath("//body/script[contains(text(),'" . $inline_js  . "')]");
+  }
+
+}
