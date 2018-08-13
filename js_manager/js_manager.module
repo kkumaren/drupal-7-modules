@@ -55,6 +55,18 @@ function js_manager_preprocess_page(&$variables) {
       continue;
     }
 
+    if(!empty($visibility['roles'])){
+      $has_role = FALSE;
+      foreach($visibility['roles'] as $role){
+        if(isset($user->roles[$role])){
+          $has_role = TRUE;
+        }
+      }
+      if(!$has_role){
+        continue;
+      }
+    }
+
     if(!empty($visibility['types'])){
       if(isset($variables['node'])){
         if(!in_array($variables['node']->type, $visibility['types'])){

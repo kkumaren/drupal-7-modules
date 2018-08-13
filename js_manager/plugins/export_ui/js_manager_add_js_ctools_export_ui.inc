@@ -39,7 +39,6 @@ $plugin = array(
  */
 function js_manager_add_js_ctools_export_ui_form(&$form, &$form_state) {
   $visibility = !empty($form_state['item']->visibility) ? unserialize($form_state['item']->visibility) : [];
-
   $form['js_type'] = array(
     '#type' => 'select',
     '#title' => t('Type'),
@@ -234,7 +233,7 @@ function js_manager_add_js_ctools_export_ui_form_validate(&$form, &$form_state) 
     }
   }
   foreach($form_state['values']['roles'] as $key => $role){
-    if($key === $role){
+    if($key == $role){
       $visibility['roles'][] = $role;
     }
   }
